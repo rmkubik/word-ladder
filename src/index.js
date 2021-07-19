@@ -1,6 +1,7 @@
 import ReactDOM from "react-dom";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled, { createGlobalStyle } from "styled-components";
+import { Fireworks } from "fireworks-js";
 import ladderData from "./ladder.txt";
 
 const GlobalStyle = createGlobalStyle`
@@ -49,6 +50,46 @@ const parseLadderData = (data) => {
   });
 };
 
+const FireworksContainer = styled.div`
+  pointer-events: ${(props) => (props.start ? "all" : "none")};
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+`;
+
+const FireworksController = ({ start }) => {
+  const [fireworks, setFireworks] = useState();
+
+  const containerRef = useCallback((node) => {
+    if (node !== null) {
+      const fireworks = new Fireworks(node, {
+        // options
+        mouse: {
+          move: true,
+        },
+        delay: {
+          min: 5,
+          max: 5,
+        },
+        speed: 10,
+        autoresize: true,
+      });
+
+      setFireworks(fireworks);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (fireworks && start) {
+      fireworks.start();
+    }
+  }, [start, fireworks]);
+
+  return <FireworksContainer ref={containerRef} start={start} />;
+};
+
 const Ladder = styled.div`
   display: grid;
   grid-template-columns: max-content 4rem 1rem;
@@ -71,19 +112,14 @@ const Status = styled.span`
   line-height: 1;
 `;
 
-const Rung = ({ clue, answer, aRef, onFocus, onCorrect }) => {
+const Rung = ({ clue, answer, aRef, onFocus, correct, setCorrect }) => {
   const [value, setValue] = useState("");
-  const [correct, setCorrect] = useState(false);
 
   useEffect(() => {
-    setCorrect(value.toLowerCase() === answer.toLowerCase());
-  }, [value]);
-
-  useEffect(() => {
-    if (correct) {
-      onCorrect();
+    if (value.toLowerCase() === answer.toLowerCase()) {
+      setCorrect();
     }
-  }, [correct]);
+  }, [value]);
 
   return (
     <>
@@ -102,6 +138,7 @@ const Rung = ({ clue, answer, aRef, onFocus, onCorrect }) => {
 
 const App = () => {
   const [ladder, setLadder] = useState(parseLadderData(ladderData));
+  const [answers, setAnswers] = useState([]);
   const focusedIndexRef = useRef(0);
   const [inputRefs, setInputRefs] = useState([]);
   const inputRefsRef = useRef(inputRefs);
@@ -111,6 +148,9 @@ const App = () => {
   };
   const focusPrev = () => {
     inputRefsRef.current[focusedIndexRef.current - 1]?.current?.focus();
+  };
+  const setCorrect = (index) => {
+    setAnswers([...answers.slice(0, index), true, ...answers.slice(index + 1)]);
   };
 
   useHotKeys({
@@ -127,10 +167,12 @@ const App = () => {
     const refs = ladder.map(() => React.createRef());
 
     setInputRefs(refs);
+    setAnswers(ladder.map(() => false));
   }, [ladder]);
 
   return (
     <div>
+      <FireworksController start={answers.every((answer) => answer === true)} />
       <GlobalStyle />
       <h1>Portland Word Ladder</h1>
       <h2>The Rules</h2>
@@ -159,7 +201,11 @@ const App = () => {
             aRef={inputRefs[index]}
             clue={clue}
             answer={answer}
-            onCorrect={focusNext}
+            correct={answers[index]}
+            setCorrect={() => {
+              setCorrect(index);
+              focusNext();
+            }}
             onFocus={() => {
               focusedIndexRef.current = index;
             }}
