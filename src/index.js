@@ -1,7 +1,28 @@
 import ReactDOM from "react-dom";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import styled from "styled-components";
+import styled, { createGlobalStyle } from "styled-components";
 import ladderData from "./ladder.txt";
+
+const GlobalStyle = createGlobalStyle`
+  body {
+    font-family: Helvetica, sans-serif;
+    margin: 0 auto;
+    max-width: 800px;
+  }
+
+  h1 {
+    margin-top: 4rem;
+    margin-bottom: 3rem;
+  }
+
+  h2 {
+    margin-top: 3rem;
+  }
+
+  h3 {
+    margin-top: 2rem;
+  }
+`;
 
 const useHotKeys = (listeners) => {
   const onKeyDown = (event) => {
@@ -33,6 +54,8 @@ const Ladder = styled.div`
   grid-template-columns: max-content 4rem 1rem;
   grid-column-gap: 1rem;
   grid-row-gap: 0.5rem;
+
+  margin-bottom: 4rem;
 `;
 
 const Clue = styled.p`
@@ -108,8 +131,27 @@ const App = () => {
 
   return (
     <div>
+      <GlobalStyle />
       <h1>Portland Word Ladder</h1>
-      <p>Rules</p>
+      <h2>The Rules</h2>
+      <p>
+        The ladder below is made up of clues on the left and spaces for answers
+        on the right. Each answer is a 4-letter word. Each answer will have
+        exactly one letter changed from the previous answer.
+      </p>
+      <h3>For Example:</h3>
+      <pre>
+        1. CORN
+        <br />
+        2. COIN
+        <br />
+        3. LOIN
+      </pre>
+      <p>
+        When you enter the correct word a checkmark will show up to let you know
+        you've found the correct word.
+      </p>
+      <h2>The Ladder</h2>
       <Ladder>
         {ladder.map(({ clue, answer }, index) => (
           <Rung
