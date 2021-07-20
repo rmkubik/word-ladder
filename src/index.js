@@ -2,7 +2,8 @@ import ReactDOM from "react-dom";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import { Fireworks } from "fireworks-js";
-import ladderData from "./ladder.txt";
+import ladderData from "../data/ladder.txt";
+import settings from "../data/settings.yaml";
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -22,6 +23,10 @@ const GlobalStyle = createGlobalStyle`
 
   h3 {
     margin-top: 2rem;
+  }
+
+  p {
+    line-height: 1.5;
   }
 `;
 
@@ -51,7 +56,8 @@ const parseLadderData = (data) => {
 };
 
 const FireworksContainer = styled.div`
-  pointer-events: ${(props) => (props.start ? "all" : "none")};
+  pointer-events: ${(props) => (props.emit ? "all" : "none")};
+
   position: fixed;
   top: 0;
   left: 0;
@@ -59,7 +65,7 @@ const FireworksContainer = styled.div`
   height: 100%;
 `;
 
-const FireworksController = ({ start }) => {
+const FireworksController = ({ emit }) => {
   const [fireworks, setFireworks] = useState();
 
   const containerRef = useCallback((node) => {
@@ -82,17 +88,17 @@ const FireworksController = ({ start }) => {
   }, []);
 
   useEffect(() => {
-    if (fireworks && start) {
+    if (fireworks && emit) {
       fireworks.start();
     }
-  }, [start, fireworks]);
+  }, [emit, fireworks]);
 
-  return <FireworksContainer ref={containerRef} start={start} />;
+  return <FireworksContainer ref={containerRef} emit={emit} />;
 };
 
 const Ladder = styled.div`
   display: grid;
-  grid-template-columns: max-content 4rem 1rem;
+  grid-template-columns: max-content ${(props) => props.wordLength}rem 1rem;
   grid-column-gap: 1rem;
   grid-row-gap: 0.5rem;
 
@@ -105,14 +111,22 @@ const Clue = styled.p`
 `;
 
 const Answer = styled.input`
-  width: 4rem;
+  width: ${(props) => props.wordLength}rem;
 `;
 
 const Status = styled.span`
   line-height: 1;
 `;
 
-const Rung = ({ clue, answer, aRef, onFocus, correct, setCorrect }) => {
+const Rung = ({
+  clue,
+  answer,
+  aRef,
+  onFocus,
+  correct,
+  setCorrect,
+  wordLength,
+}) => {
   const [value, setValue] = useState("");
 
   useEffect(() => {
@@ -128,8 +142,11 @@ const Rung = ({ clue, answer, aRef, onFocus, correct, setCorrect }) => {
         ref={aRef}
         value={value}
         correct={correct}
-        onChange={(e) => setValue(e.target.value.toUpperCase().slice(0, 4))}
+        onChange={(e) =>
+          setValue(e.target.value.toUpperCase().slice(0, wordLength))
+        }
         onFocus={onFocus}
+        wordLength={wordLength}
       />
       <Status>{correct ? "✅" : ""}</Status>
     </>
@@ -142,6 +159,17 @@ const App = () => {
   const focusedIndexRef = useRef(0);
   const [inputRefs, setInputRefs] = useState([]);
   const inputRefsRef = useRef(inputRefs);
+
+  /**
+   * Get the word with the longest length
+   */
+  const wordLength = ladder.reduce((longest, current) => {
+    if (current.answer.length > longest.answer.length) {
+      return current;
+    }
+
+    return longest;
+  }).answer.length;
 
   const focusNext = () => {
     inputRefsRef.current[focusedIndexRef.current + 1]?.current?.focus();
@@ -172,29 +200,16 @@ const App = () => {
 
   return (
     <div>
-      <FireworksController start={answers.every((answer) => answer === true)} />
+      <FireworksController emit={answers.every((answer) => answer === true)} />
       <GlobalStyle />
-      <h1>Portland Word Ladder</h1>
+      <h1>{settings.title}</h1>
       <h2>The Rules</h2>
-      <p>
-        The ladder below is made up of clues on the left and spaces for answers
-        on the right. Each answer is a 4-letter word. Each answer will have
-        exactly one letter changed from the previous answer.
-      </p>
+      <p>{settings.rules}</p>
       <h3>For Example:</h3>
-      <pre>
-        1. CORN
-        <br />
-        2. COIN
-        <br />
-        3. LOIN
-      </pre>
-      <p>
-        When you enter the correct word a checkmark will show up to let you know
-        you've found the correct word.
-      </p>
+      <pre>{settings.example}</pre>
+      <p></p>
       <h2>The Ladder</h2>
-      <Ladder>
+      <Ladder wordLength={wordLength}>
         {ladder.map(({ clue, answer }, index) => (
           <Rung
             key={clue}
@@ -209,6 +224,7 @@ const App = () => {
             onFocus={() => {
               focusedIndexRef.current = index;
             }}
+            wordLength={wordLength}
           />
         ))}
       </Ladder>

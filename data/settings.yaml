@@ -1,0 +1,9 @@
+title: Portland Word Ladder
+rules: >
+  The ladder below is made up of clues on the left and spaces for answers on the right.
+  Each answer is a 4-letter word. Each answer will have exactly one letter changed from the previous answer.
+  When you enter the correct word a checkmark will show up to let you know you've found the correct word.
+example: |
+  1. CORN ✅
+  2. COIN ✅
+  3. LOIN ✅
