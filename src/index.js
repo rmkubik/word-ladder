@@ -1,184 +1,31 @@
 import ReactDOM from "react-dom";
-import React, { useCallback, useEffect, useRef, useState } from "react";
-import styled, { createGlobalStyle } from "styled-components";
-import { Fireworks } from "fireworks-js";
+import React, { useEffect, useState } from "react";
+
 import ladderData from "../data/ladder.txt";
 import settings from "../data/settings.yaml";
 
-const GlobalStyle = createGlobalStyle`
-  body {
-    font-family: Helvetica, sans-serif;
-    margin: 0 auto;
-    max-width: 800px;
-  }
+import useHotKeys from "./hooks/useHotKeys";
+import useAnswers from "./hooks/useAnswers";
 
-  h1 {
-    margin-top: 4rem;
-    margin-bottom: 3rem;
-  }
+import GlobalStyle from "./components/GlobalStyle";
+import FireworksController from "./components/FireworksController";
+import Ladder from "./components/Ladder";
+import Rung from "./components/Rung";
 
-  h2 {
-    margin-top: 3rem;
-  }
-
-  h3 {
-    margin-top: 2rem;
-  }
-
-  p {
-    line-height: 1.5;
-  }
-`;
-
-const useHotKeys = (listeners) => {
-  const onKeyDown = (event) => {
-    const { key } = event;
-
-    listeners[key] && listeners[key]();
-  };
-
-  useEffect(() => {
-    document.addEventListener("keydown", onKeyDown);
-
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, []);
-};
-
-const parseLadderData = (data) => {
-  return data.split("\n").map((line) => {
-    const firstSpaceIndex = line.indexOf(" ");
-
-    return {
-      answer: line.substring(0, firstSpaceIndex),
-      clue: line.substring(firstSpaceIndex + 1),
-    };
-  });
-};
-
-const FireworksContainer = styled.div`
-  pointer-events: ${(props) => (props.emit ? "all" : "none")};
-
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-`;
-
-const FireworksController = ({ emit }) => {
-  const [fireworks, setFireworks] = useState();
-
-  const containerRef = useCallback((node) => {
-    if (node !== null) {
-      const fireworks = new Fireworks(node, {
-        // options
-        mouse: {
-          move: true,
-        },
-        delay: {
-          min: 5,
-          max: 5,
-        },
-        speed: 10,
-        autoresize: true,
-      });
-
-      setFireworks(fireworks);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (fireworks && emit) {
-      fireworks.start();
-    }
-  }, [emit, fireworks]);
-
-  return <FireworksContainer ref={containerRef} emit={emit} />;
-};
-
-const Ladder = styled.div`
-  display: grid;
-  grid-template-columns: max-content ${(props) => props.wordLength}rem 1rem;
-  grid-column-gap: 1rem;
-  grid-row-gap: 0.5rem;
-
-  margin-bottom: 4rem;
-`;
-
-const Clue = styled.p`
-  margin: 0;
-  width: max-content;
-`;
-
-const Answer = styled.input`
-  width: ${(props) => props.wordLength}rem;
-`;
-
-const Status = styled.span`
-  line-height: 1;
-`;
-
-const Rung = ({
-  clue,
-  answer,
-  aRef,
-  onFocus,
-  correct,
-  setCorrect,
-  wordLength,
-}) => {
-  const [value, setValue] = useState("");
-
-  useEffect(() => {
-    if (value.toLowerCase() === answer.toLowerCase()) {
-      setCorrect();
-    }
-  }, [value]);
-
-  return (
-    <>
-      <Clue>{clue}</Clue>
-      <Answer
-        ref={aRef}
-        value={value}
-        correct={correct}
-        onChange={(e) =>
-          setValue(e.target.value.toUpperCase().slice(0, wordLength))
-        }
-        onFocus={onFocus}
-        wordLength={wordLength}
-      />
-      <Status>{correct ? "✅" : ""}</Status>
-    </>
-  );
-};
+import { getMaxWordLength, parseLadderData } from "./utils";
 
 const App = () => {
-  const [ladder, setLadder] = useState(parseLadderData(ladderData));
-  const [answers, setAnswers] = useState([]);
-  const focusedIndexRef = useRef(0);
+  const [ladder] = useState(parseLadderData(ladderData));
+  const { answers, initAnswers, setCorrect, areAllAnswersCompleted } =
+    useAnswers();
   const [inputRefs, setInputRefs] = useState([]);
-  const inputRefsRef = useRef(inputRefs);
-
-  /**
-   * Get the word with the longest length
-   */
-  const wordLength = ladder.reduce((longest, current) => {
-    if (current.answer.length > longest.answer.length) {
-      return current;
-    }
-
-    return longest;
-  }).answer.length;
+  const [focusedIndex, setFocusedIndex] = useState(0);
 
   const focusNext = () => {
-    inputRefsRef.current[focusedIndexRef.current + 1]?.current?.focus();
+    inputRefs[focusedIndex + 1]?.current?.focus();
   };
   const focusPrev = () => {
-    inputRefsRef.current[focusedIndexRef.current - 1]?.current?.focus();
-  };
-  const setCorrect = (index) => {
-    setAnswers([...answers.slice(0, index), true, ...answers.slice(index + 1)]);
+    inputRefs[focusedIndex - 1]?.current?.focus();
   };
 
   useHotKeys({
@@ -188,19 +35,25 @@ const App = () => {
   });
 
   useEffect(() => {
-    inputRefsRef.current = inputRefs;
-  }, [inputRefs]);
-
-  useEffect(() => {
+    // Create refs for each input after ladder is set
     const refs = ladder.map(() => React.createRef());
 
     setInputRefs(refs);
-    setAnswers(ladder.map(() => false));
+    initAnswers(ladder.length);
   }, [ladder]);
+
+  useEffect(() => {
+    // Focus first input after inputRefs are created
+    if (inputRefs.length > 1) {
+      inputRefs[0]?.current?.focus();
+    }
+  }, [inputRefs]);
+
+  const wordLength = getMaxWordLength(ladder);
 
   return (
     <div>
-      <FireworksController emit={answers.every((answer) => answer === true)} />
+      <FireworksController emit={areAllAnswersCompleted()} />
       <GlobalStyle />
       <h1>{settings.title}</h1>
       <h2>The Rules</h2>
@@ -222,7 +75,7 @@ const App = () => {
               focusNext();
             }}
             onFocus={() => {
-              focusedIndexRef.current = index;
+              setFocusedIndex(index);
             }}
             wordLength={wordLength}
           />
