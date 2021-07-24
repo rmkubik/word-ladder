@@ -81,6 +81,7 @@ const App = () => {
           />
         ))}
       </Ladder>
+      <a href={settings.closingLink.link}>{settings.closingLink.label}</a>
     </div>
   );
 };

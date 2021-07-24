@@ -7,3 +7,6 @@ example: |
   1. CORN ✅
   2. COIN ✅
   3. LOIN ✅
+closingLink:
+  label: Make your own and/or check out the source on GitHub.
+  link: https://github.com/rmkubik/word-ladder

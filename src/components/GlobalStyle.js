@@ -5,6 +5,7 @@ const GlobalStyle = createGlobalStyle`
     font-family: Helvetica, sans-serif;
     margin: 0 auto;
     max-width: 800px;
+    margin-bottom: 2rem;
   }
 
   h1 {
