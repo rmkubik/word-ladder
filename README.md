@@ -16,7 +16,7 @@ The first is a [settings.yaml](data/settings.yaml) file that contains things lik
 
 ### ladder.txt
 
-The main file is [ladder.txt](data/ladder.txt). It contains an answer word of any length and then a clue separated by a space. The first block of characters will be treated as the answer, the rest of the line after the first space character will be treated as the clue.
+The main file is [ladder.txt](data/ladder.txt) (spoilers if you haven't played yet). It contains an answer word of any length and then a clue separated by a space. The first block of characters will be treated as the answer, the rest of the line after the first space character will be treated as the clue.
 
 **For example:**
 
